@@ -1,16 +1,12 @@
 [profile.default]
 src = "src"
-test = 'test'
 out = "out"
 libs = ["lib"]
-solc_version = '0.8.28'
-evm_version = 'paris'
-gas_reports = ['*']
-gas_reports_ignore = []
+solc = "0.8.17"
 optimizer = true
 optimizer_runs = 200
-via-ir = true
 
-[etherscan]
-optimism = { key = "${ETHERSCAN_OPTIMISM_KEY}" }
-optimism_sepolia = { key = "${ETHERSCAN_OPTIMISM_KEY}", chain = 11155420, url = "https://api-sepolia-optimistic.etherscan.io/api" }
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = true
