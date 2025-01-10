@@ -1,6 +1,16 @@
 [profile.default]
 src = "src"
+test = 'test'
 out = "out"
 libs = ["lib"]
+solc_version = '0.8.28'
+evm_version = 'paris'
+gas_reports = ['*']
+gas_reports_ignore = []
+optimizer = true
+optimizer_runs = 200
+via-ir = true
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+[etherscan]
+optimism = { key = "${ETHERSCAN_OPTIMISM_KEY}" }
+optimism_sepolia = { key = "${ETHERSCAN_OPTIMISM_KEY}", chain = 11155420, url = "https://api-sepolia-optimistic.etherscan.io/api" }
