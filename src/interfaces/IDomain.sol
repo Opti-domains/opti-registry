@@ -3,10 +3,7 @@ pragma solidity ^0.8.17;
 
 interface IDomain {
     /// @notice Emitted when domain ownership is transferred
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /// @notice Emitted when a subdomain is recorded
     event SubdomainRecorded(string indexed name, address indexed proxyAddress);
@@ -22,10 +19,7 @@ interface IDomain {
     /// @param label The label for the subdomain
     /// @param subdomainOwner The owner of the new subdomain
     /// @return The address of the new subdomain contract
-    function registerSubdomain(
-        string calldata label,
-        address subdomainOwner
-    ) external returns (address);
+    function registerSubdomain(string calldata label, address subdomainOwner) external returns (address);
 
     /// @notice Gets the current owner of the domain
     function owner() external view returns (address);

@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "./interfaces/IDomain.sol";
 import "./lib/DNSEncoder.sol";
-import {ClonesWithImmutableArgs} from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 /// @title DomainImplementation
 /// @notice Implementation contract for domain management with immutable args
@@ -36,15 +36,10 @@ abstract contract DomainImplementation is IDomain {
         bool isParentOwnerDelegated = false;
         address parentAddr = parent();
         if (parentAddr != address(0)) {
-            isParentOwnerDelegated =
-                DomainImplementation(parentAddr).subdomainOwnerDelegation() &&
-                owner == msg.sender;
+            isParentOwnerDelegated = DomainImplementation(parentAddr).subdomainOwnerDelegation() && owner == msg.sender;
         }
 
-        return
-            msg.sender == parentAddr ||
-            authorizedDelegates[msg.sender] ||
-            isParentOwnerDelegated;
+        return msg.sender == parentAddr || authorizedDelegates[msg.sender] || isParentOwnerDelegated;
     }
 
     modifier onlyAuthorized() {
@@ -68,10 +63,7 @@ abstract contract DomainImplementation is IDomain {
 
     /// @notice Adds a new authorized delegate
     /// @param delegate Address to authorize
-    function addAuthorizedDelegate(
-        address delegate,
-        bool authorized
-    ) external onlyAuthorized {
+    function addAuthorizedDelegate(address delegate, bool authorized) external onlyAuthorized {
         authorizedDelegates[delegate] = authorized;
         emit DelegateAuthorized(delegate, authorized);
     }
@@ -85,10 +77,11 @@ abstract contract DomainImplementation is IDomain {
     /// @notice Registers a new subdomain
     /// @param label The label for the subdomain
     /// @param subdomainOwner The owner of the new subdomain
-    function registerSubdomain(
-        string calldata label,
-        address subdomainOwner
-    ) external onlyAuthorized returns (address) {
+    function registerSubdomain(string calldata label, address subdomainOwner)
+        external
+        onlyAuthorized
+        returns (address)
+    {
         bytes memory labelBytes = bytes(label);
         if (!DNSEncoder.isValidLabel(labelBytes)) revert InvalidLabel();
         if (subdomains[label] != address(0)) revert SubdomainAlreadyExists();
@@ -119,10 +112,11 @@ abstract contract DomainImplementation is IDomain {
     /// @param reverseDnsEncoded The reverse DNS encoded name of the subdomain path
     /// @param data The calldata to pass to the final subdomain
     /// @return bytes The return data from the call
-    function callSubdomain(
-        bytes calldata reverseDnsEncoded,
-        bytes calldata data
-    ) external onlyAuthorized returns (bytes memory) {
+    function callSubdomain(bytes calldata reverseDnsEncoded, bytes calldata data)
+        external
+        onlyAuthorized
+        returns (bytes memory)
+    {
         // If no more labels, execute the call on this contract
         if (reverseDnsEncoded.length == 1 && reverseDnsEncoded[0] == 0) {
             (bool success, bytes memory returnData) = address(this).call(data);
@@ -134,9 +128,7 @@ abstract contract DomainImplementation is IDomain {
         uint8 labelLength = uint8(reverseDnsEncoded[0]);
 
         // Extract the label
-        string memory currentLabel = string(
-            reverseDnsEncoded[1:labelLength + 1]
-        );
+        string memory currentLabel = string(reverseDnsEncoded[1:labelLength + 1]);
 
         // Get the subdomain address
         address subdomainAddr = subdomains[currentLabel];
@@ -146,11 +138,7 @@ abstract contract DomainImplementation is IDomain {
         bytes calldata remainingLabels = reverseDnsEncoded[labelLength + 1:];
 
         // Recursively call the subdomain
-        return
-            DomainImplementation(subdomainAddr).callSubdomain(
-                remainingLabels,
-                data
-            );
+        return DomainImplementation(subdomainAddr).callSubdomain(remainingLabels, data);
     }
 
     /// @notice Gets the implementation contract address
@@ -194,12 +182,7 @@ abstract contract DomainImplementation is IDomain {
         bytes memory labelBytes = bytes(domainLabel);
 
         // Combine this label with parent's encoded name
-        return
-            abi.encodePacked(
-                bytes1(uint8(labelBytes.length)),
-                labelBytes,
-                parentEncoded
-            );
+        return abi.encodePacked(bytes1(uint8(labelBytes.length)), labelBytes, parentEncoded);
     }
 
     /// @notice Gets all subdomain names
@@ -224,10 +207,7 @@ abstract contract DomainImplementation is IDomain {
         return arg;
     }
 
-    function _getArgBytes(
-        uint256 offset,
-        uint256 length
-    ) internal pure returns (bytes memory) {
+    function _getArgBytes(uint256 offset, uint256 length) internal pure returns (bytes memory) {
         bytes memory arg = new bytes(length);
         assembly {
             calldatacopy(add(arg, 0x20), offset, length)

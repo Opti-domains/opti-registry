@@ -68,10 +68,7 @@ library DNSEncoder {
     /// @param label The new label to prepend
     /// @param name The existing encoded name
     /// @return bytes The concatenated name in DNS wire format
-    function concatenateName(
-        bytes memory label,
-        bytes memory name
-    ) internal pure returns (bytes memory) {
+    function concatenateName(bytes memory label, bytes memory name) internal pure returns (bytes memory) {
         if (!isValidLabel(label)) revert InvalidLabel();
         if (!isValidDomain(name)) revert InvalidDomain();
 
@@ -84,9 +81,7 @@ library DNSEncoder {
     /// @notice Encodes a domain name from an array of labels
     /// @param labels Array of labels in reverse order (TLD first)
     /// @return bytes The encoded domain name in DNS wire format
-    function encodeName(
-        string[] memory labels
-    ) internal pure returns (bytes memory) {
+    function encodeName(string[] memory labels) internal pure returns (bytes memory) {
         bytes memory result = abi.encodePacked(ZERO_LENGTH);
 
         for (uint256 i = 0; i < labels.length; i++) {
@@ -102,9 +97,7 @@ library DNSEncoder {
     /// @notice Decodes a DNS wire format name into its labels
     /// @param name The encoded domain name
     /// @return labels Array of decoded labels
-    function decodeName(
-        bytes memory name
-    ) internal pure returns (string[] memory labels) {
+    function decodeName(bytes memory name) internal pure returns (string[] memory labels) {
         if (!isValidDomain(name)) revert InvalidDomain();
 
         // Count labels first
@@ -143,9 +136,11 @@ library DNSEncoder {
     function _isValidLabelChar(bytes1 ch) private pure returns (bool) {
         // Letters, digits, and hyphens only
         // ASCII: 0-9, A-Z, a-z, -
-        return ((ch >= 0x30 && ch <= 0x39) || // 0-9
-            (ch >= 0x41 && ch <= 0x5A) || // A-Z
-            (ch >= 0x61 && ch <= 0x7A) || // a-z
-            ch == 0x2D); // hyphen
+        return (
+            (ch >= 0x30 && ch <= 0x39) // 0-9
+                || (ch >= 0x41 && ch <= 0x5A) // A-Z
+                || (ch >= 0x61 && ch <= 0x7A) // a-z
+                || ch == 0x2D
+        ); // hyphen
     }
 }
