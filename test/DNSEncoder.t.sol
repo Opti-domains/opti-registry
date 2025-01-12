@@ -31,6 +31,43 @@ contract DNSEncoderTest is Test {
         assertFalse(DNSEncoder.isValidDomain(invalidChar));
     }
 
+    function testConcatenateName() public {
+        bytes memory label = bytes("test");
+        bytes memory name = abi.encodePacked(bytes1(uint8(3)), "eth", bytes1(uint8(0)));
+
+        bytes memory expected = abi.encodePacked(bytes1(uint8(4)), "test", bytes1(uint8(3)), "eth", bytes1(uint8(0)));
+        bytes memory result = DNSEncoder.concatenateName(label, name);
+
+        assertEq0(result, expected);
+    }
+
+    function testEncodeName() public {
+        string[] memory labels = new string[](3);
+        labels[0] = "com";
+        labels[1] = "example";
+        labels[2] = "test";
+
+        bytes memory expected = abi.encodePacked(
+            bytes1(uint8(4)), "test", bytes1(uint8(7)), "example", bytes1(uint8(3)), "com", bytes1(uint8(0))
+        );
+
+        bytes memory result = DNSEncoder.encodeName(labels);
+        assertEq0(result, expected);
+    }
+
+    function testDecodeName() public {
+        bytes memory encoded = abi.encodePacked(
+            bytes1(uint8(4)), "test", bytes1(uint8(7)), "example", bytes1(uint8(3)), "com", bytes1(uint8(0))
+        );
+
+        string[] memory labels = DNSEncoder.decodeName(encoded);
+
+        assertEq(labels.length, 3);
+        assertEq(labels[0], "test");
+        assertEq(labels[1], "example");
+        assertEq(labels[2], "com");
+    }
+
     function testReverseDnsEncoded() public {
         bytes memory original = abi.encodePacked(
             bytes1(uint8(3)), "com", bytes1(uint8(7)), "example", bytes1(uint8(4)), "test", bytes1(uint8(0))

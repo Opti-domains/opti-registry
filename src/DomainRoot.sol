@@ -9,25 +9,11 @@ import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithIm
 contract DomainRoot is DomainImplementation {
     using ClonesWithImmutableArgs for address;
 
-    address baseResolver;
+    address public immutable baseImplementation;
+    address public baseResolver;
 
     constructor(address _implementation, address _owner, address _resolver) {
-        // Set immutable args in storage since this is not a clone
-        bytes memory immutableArgs = abi.encodePacked(
-            _implementation, // implementation address (20 bytes)
-            address(0), // parent address (20 bytes)
-            uint16(0), // label length (2 bytes)
-            bytes("") // empty label (0 bytes)
-        );
-
-        // Store immutable args
-        assembly {
-            let length := mload(immutableArgs)
-            let data := add(immutableArgs, 0x20)
-            sstore(0, mload(data))
-            if gt(length, 0x20) { sstore(1, mload(add(data, 0x20))) }
-        }
-
+        baseImplementation = _implementation;
         owner = _owner;
         baseResolver = _resolver;
         emit OwnershipTransferred(address(0), _owner);
@@ -63,5 +49,10 @@ contract DomainRoot is DomainImplementation {
     /// @notice Override resolver
     function resolver() public view virtual override returns (address) {
         return baseResolver;
+    }
+
+    /// @notice Override implementation
+    function implementation() public view virtual override returns (address) {
+        return baseImplementation;
     }
 }

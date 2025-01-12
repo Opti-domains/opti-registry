@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
+import { TestDomain } from "./DomainImplementation.t.sol";
 import "../src/SingularResolver.sol";
 import "../src/BasicResolverAuthorizer.sol";
 import "../src/DomainRoot.sol";

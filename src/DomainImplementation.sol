@@ -4,12 +4,13 @@ pragma solidity ^0.8.17;
 import "./interfaces/IDomain.sol";
 import "./lib/DNSEncoder.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import { Clone } from "clones-with-immutable-args/Clone.sol";
 import "@openzeppelin/contracts/utils/Multicall.sol";
 
 /// @title DomainImplementation
 /// @notice Implementation contract for domain management with immutable args
 /// @dev Used as the base contract for cloneable proxies
-abstract contract DomainImplementation is IDomain, Multicall {
+abstract contract DomainImplementation is IDomain, Multicall, Clone {
     using ClonesWithImmutableArgs for address;
 
     // Immutable args offsets
@@ -128,17 +129,17 @@ abstract contract DomainImplementation is IDomain, Multicall {
     }
 
     /// @notice Gets the implementation contract address
-    function implementation() public pure virtual returns (address) {
+    function implementation() public view virtual returns (address) {
         return _getArgAddress(IMPLEMENTATION_OFFSET);
     }
 
     /// @notice Gets the parent domain address
-    function parent() public pure virtual returns (address) {
+    function parent() public view virtual returns (address) {
         return _getArgAddress(PARENT_OFFSET);
     }
 
     /// @notice Gets the label of this domain
-    function label() public pure virtual returns (string memory) {
+    function label() public view virtual returns (string memory) {
         uint16 labelLength = _getArgUint16(LABEL_LENGTH_OFFSET);
         bytes memory labelBytes = _getArgBytes(LABEL_OFFSET, labelLength);
         return string(labelBytes);
@@ -207,27 +208,20 @@ abstract contract DomainImplementation is IDomain, Multicall {
         return IDomain(parent()).resolver();
     }
 
-    // Internal helper functions for reading immutable args
-    function _getArgAddress(uint256 offset) internal pure returns (address) {
-        address arg;
-        assembly {
-            arg := shr(0x60, calldataload(offset))
-        }
-        return arg;
-    }
-
     function _getArgUint16(uint256 offset) internal pure returns (uint16) {
         uint16 arg;
+        uint256 baseOffset = _getImmutableArgsOffset();
         assembly {
-            arg := shr(0xf0, calldataload(offset))
+            arg := shr(0xf0, calldataload(add(baseOffset, offset)))
         }
         return arg;
     }
 
     function _getArgBytes(uint256 offset, uint256 length) internal pure returns (bytes memory) {
         bytes memory arg = new bytes(length);
+        uint256 baseOffset = _getImmutableArgsOffset();
         assembly {
-            calldatacopy(add(arg, 0x20), offset, length)
+            calldatacopy(add(arg, 0x20), add(baseOffset, offset), length)
         }
         return arg;
     }

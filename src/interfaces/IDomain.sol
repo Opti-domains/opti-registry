@@ -31,13 +31,13 @@ interface IDomain {
     function owner() external view returns (address);
 
     /// @notice Gets the implementation contract address
-    function implementation() external pure returns (address);
+    function implementation() external view returns (address);
 
     /// @notice Gets the parent domain address
-    function parent() external pure returns (address);
+    function parent() external view returns (address);
 
     /// @notice Gets the label of this domain
-    function label() external pure returns (string memory);
+    function label() external view returns (string memory);
 
     /// @notice Gets the full name as array of labels
     function name() external view returns (string[] memory);
