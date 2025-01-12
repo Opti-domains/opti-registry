@@ -1,96 +1,145 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "./interfaces/IResolver.sol";
+import "./interfaces/ISingularResolver.sol";
 import "./interfaces/ISingularResolverAuthorizer.sol";
+import "@openzeppelin/contracts/utils/Multicall.sol";
 
 /// @title SingularResolver
 /// @notice A resolver contract that stores and manages various DNS-related records
 /// @dev Implements the IResolver interface with authorization checks
-contract SingularResolver is IResolver {
+contract SingularResolver is ISingularResolver, Multicall {
+    error NotAuthorized();
+
+    /// @notice Mapping of authorizer address to domain hash to resolved address
     mapping(address => mapping(bytes32 => address)) private addresses;
+    /// @notice Mapping of authorizer address to domain hash to key to text value
     mapping(address => mapping(bytes32 => mapping(string => string))) private texts;
+    /// @notice Mapping of authorizer address to domain hash to content hash
     mapping(address => mapping(bytes32 => bytes)) private contenthashes;
+    /// @notice Mapping of authorizer address to domain hash to DNS name to resource type to record
     mapping(address => mapping(bytes32 => mapping(bytes => mapping(uint16 => bytes)))) private dnsRecords;
+    /// @notice Mapping of authorizer address to domain hash to zone hash
     mapping(address => mapping(bytes32 => bytes)) private zonehashes;
 
-    /// @notice Ensures that only authorized addresses can modify records
-    /// @param authorizer The authorizer contract to check permissions
-    /// @param node The node being modified
-    modifier onlyAuthorized(ISingularResolverAuthorizer authorizer, bytes32 node) {
-        require(authorizer.isResolverAuthorized(node, msg.sender, msg.data), "SingularResolver: Not authorized");
+    /// @notice Modifier to check if caller is authorized by the authorizer contract
+    /// @param authorizer The authorizer contract to check against
+    /// @param dnsEncoded The DNS encoded name to check authorization for
+    modifier onlyAuthorized(ISingularResolverAuthorizer authorizer, bytes calldata dnsEncoded) {
+        if (!authorizer.isResolverAuthorized(dnsEncoded, msg.sender, msg.data)) {
+            revert NotAuthorized();
+        }
         _;
     }
 
-    /// @notice Sets the address associated with a node
-    /// @param authorizer The authorizer contract
-    /// @param node The node to update
+    /// @notice Sets the address record for a domain
     /// @param addr The address to set
-    function setAddr(ISingularResolverAuthorizer authorizer, bytes32 node, address addr)
+    /// @param dnsEncoded The DNS encoded name to set the record for
+    /// @param authorizer The authorizer contract to check permissions against
+    function setAddr(address addr, bytes calldata dnsEncoded, ISingularResolverAuthorizer authorizer)
         external
-        onlyAuthorized(authorizer, node)
+        onlyAuthorized(authorizer, dnsEncoded)
     {
-        addresses[address(authorizer)][node] = addr;
-        emit AddrChanged(node, addr);
+        addresses[address(authorizer)][keccak256(dnsEncoded)] = addr;
+        emit AddrChanged(keccak256(dnsEncoded), addr);
     }
 
-    function addr(bytes32 node) external view override returns (address) {
-        return addresses[msg.sender][node];
+    /// @notice Gets the address record for a domain
+    /// @param dnsEncoded The DNS encoded name to get the record for
+    /// @return The resolved address
+    function addr(bytes calldata dnsEncoded) external view override returns (address) {
+        return addresses[msg.sender][keccak256(dnsEncoded)];
     }
 
-    function setText(ISingularResolverAuthorizer authorizer, bytes32 node, string calldata key, string calldata value)
+    /// @notice Sets a text record for a domain
+    /// @param key The key for the text record
+    /// @param value The value to set
+    /// @param dnsEncoded The DNS encoded name to set the record for
+    /// @param authorizer The authorizer contract to check permissions against
+    function setText(
+        string calldata key,
+        string calldata value,
+        bytes calldata dnsEncoded,
+        ISingularResolverAuthorizer authorizer
+    ) external onlyAuthorized(authorizer, dnsEncoded) {
+        texts[address(authorizer)][keccak256(dnsEncoded)][key] = value;
+        emit TextChanged(keccak256(dnsEncoded), key, value);
+    }
+
+    /// @notice Gets a text record for a domain
+    /// @param dnsEncoded The DNS encoded name to get the record for
+    /// @param key The key for the text record
+    /// @return The text value
+    function text(bytes calldata dnsEncoded, string calldata key) external view override returns (string memory) {
+        return texts[msg.sender][keccak256(dnsEncoded)][key];
+    }
+
+    /// @notice Sets the content hash for a domain
+    /// @param hash The content hash to set
+    /// @param dnsEncoded The DNS encoded name to set the record for
+    /// @param authorizer The authorizer contract to check permissions against
+    function setContenthash(bytes calldata hash, bytes calldata dnsEncoded, ISingularResolverAuthorizer authorizer)
         external
-        onlyAuthorized(authorizer, node)
+        onlyAuthorized(authorizer, dnsEncoded)
     {
-        texts[address(authorizer)][node][key] = value;
-        emit TextChanged(node, key, value);
+        contenthashes[address(authorizer)][keccak256(dnsEncoded)] = hash;
+        emit ContenthashChanged(keccak256(dnsEncoded), hash);
     }
 
-    function text(bytes32 node, string calldata key) external view override returns (string memory) {
-        return texts[msg.sender][node][key];
+    /// @notice Gets the content hash for a domain
+    /// @param dnsEncoded The DNS encoded name to get the record for
+    /// @return The content hash
+    function contenthash(bytes calldata dnsEncoded) external view override returns (bytes memory) {
+        return contenthashes[msg.sender][keccak256(dnsEncoded)];
     }
 
-    function setContenthash(ISingularResolverAuthorizer authorizer, bytes32 node, bytes calldata hash)
-        external
-        onlyAuthorized(authorizer, node)
-    {
-        contenthashes[address(authorizer)][node] = hash;
-        emit ContenthashChanged(node, hash);
-    }
-
-    function contenthash(bytes32 node) external view override returns (bytes memory) {
-        return contenthashes[msg.sender][node];
-    }
-
+    /// @notice Sets a DNS record for a domain
+    /// @param name The DNS record name
+    /// @param resource The DNS record type
+    /// @param record The DNS record data
+    /// @param dnsEncoded The DNS encoded name to set the record for
+    /// @param authorizer The authorizer contract to check permissions against
     function setDNSRecord(
-        ISingularResolverAuthorizer authorizer,
-        bytes32 node,
         bytes calldata name,
         uint16 resource,
-        bytes calldata record
-    ) external onlyAuthorized(authorizer, node) {
-        dnsRecords[address(authorizer)][node][name][resource] = record;
-        emit DNSRecordChanged(node, name, resource, record);
+        bytes calldata record,
+        bytes calldata dnsEncoded,
+        ISingularResolverAuthorizer authorizer
+    ) external onlyAuthorized(authorizer, dnsEncoded) {
+        dnsRecords[address(authorizer)][keccak256(dnsEncoded)][name][resource] = record;
+        emit DNSRecordChanged(keccak256(dnsEncoded), name, resource, record);
     }
 
-    function dnsRecord(bytes32 node, bytes calldata name, uint16 resource)
+    /// @notice Gets a DNS record for a domain
+    /// @param dnsEncoded The DNS encoded name to get the record for
+    /// @param name The DNS record name
+    /// @param resource The DNS record type
+    /// @return The DNS record data
+    function dnsRecord(bytes calldata dnsEncoded, bytes calldata name, uint16 resource)
         external
         view
         override
         returns (bytes memory)
     {
-        return dnsRecords[msg.sender][node][name][resource];
+        return dnsRecords[msg.sender][keccak256(dnsEncoded)][name][resource];
     }
 
-    function setDNSZonehash(ISingularResolverAuthorizer authorizer, bytes32 node, bytes calldata hash)
+    /// @notice Sets the DNS zone hash for a domain
+    /// @param hash The zone hash to set
+    /// @param dnsEncoded The DNS encoded name to set the record for
+    /// @param authorizer The authorizer contract to check permissions against
+    function setDNSZonehash(bytes calldata hash, bytes calldata dnsEncoded, ISingularResolverAuthorizer authorizer)
         external
-        onlyAuthorized(authorizer, node)
+        onlyAuthorized(authorizer, dnsEncoded)
     {
-        zonehashes[address(authorizer)][node] = hash;
-        emit DNSZonehashChanged(node, hash);
+        zonehashes[address(authorizer)][keccak256(dnsEncoded)] = hash;
+        emit DNSZonehashChanged(keccak256(dnsEncoded), hash);
     }
 
-    function dnsZonehash(bytes32 node) external view override returns (bytes memory) {
-        return zonehashes[msg.sender][node];
+    /// @notice Gets the DNS zone hash for a domain
+    /// @param dnsEncoded The DNS encoded name to get the record for
+    /// @return The zone hash
+    function dnsZonehash(bytes calldata dnsEncoded) external view override returns (bytes memory) {
+        return zonehashes[msg.sender][keccak256(dnsEncoded)];
     }
 }

@@ -21,6 +21,12 @@ interface IDomain {
     /// @return The address of the new subdomain contract
     function registerSubdomain(string calldata label, address subdomainOwner) external returns (address);
 
+    /// @notice Call a subdomain recursively with encoded DNS name and calldata
+    /// @param reverseDnsEncoded The reverse DNS encoded name of the subdomain path
+    /// @param data The calldata to pass to the final subdomain
+    /// @return bytes The return data from the call
+    function callSubdomain(bytes calldata reverseDnsEncoded, bytes calldata data) external returns (bytes memory);
+
     /// @notice Gets the current owner of the domain
     function owner() external view returns (address);
 
@@ -46,4 +52,32 @@ interface IDomain {
     /// @param name The subdomain name
     /// @return The proxy address of the subdomain
     function subdomains(string memory name) external view returns (address);
+
+    /// @notice Gets the resolver from parent or self
+    function resolver() external view returns (address);
+
+    /// @notice Gets the address of a nested subdomain using reversed DNS encoded name
+    /// @param reverseDnsEncoded The reversed DNS encoded name
+    /// @return The address of the target domain
+    function getNestedAddress(bytes calldata reverseDnsEncoded) external view returns (address);
+
+    /// @notice Check if an address is authorized to manage this domain
+    /// @param addr The address to check authorization for
+    /// @return bool True if the address is authorized
+    function isAuthorized(address addr) external view returns (bool);
+
+    /// @notice Adds a new authorized delegate
+    /// @param delegate Address to authorize
+    /// @param authorized Whether to authorize or revoke
+    function addAuthorizedDelegate(address delegate, bool authorized) external;
+
+    /// @notice Sets whether owner delegation is enabled for subdomains
+    /// @param enabled Whether to enable owner delegation
+    function setSubdomainOwnerDelegation(bool enabled) external;
+
+    /// @notice Gets whether an address is an authorized delegate
+    function authorizedDelegates(address delegate) external view returns (bool);
+
+    /// @notice Gets whether subdomain owner delegation is enabled
+    function subdomainOwnerDelegation() external view returns (bool);
 }

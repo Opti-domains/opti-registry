@@ -143,4 +143,48 @@ library DNSEncoder {
                 || ch == 0x2D
         ); // hyphen
     }
+
+    /// @notice Reverses a DNS encoded name
+    /// @param name The DNS encoded name to reverse
+    /// @return The reversed DNS encoded name
+    function reverseDnsEncoded(bytes memory name) internal pure returns (bytes memory) {
+        if (!isValidDomain(name)) revert InvalidDomain();
+
+        // Count labels first
+        uint256 labelCount = 0;
+        uint256[] memory positions = new uint256[](127); // Max labels
+        uint256[] memory lengths = new uint256[](127);
+        uint256 position = 0;
+
+        while (position < name.length) {
+            uint8 labelLength = uint8(name[position]);
+            if (labelLength == 0) break;
+
+            positions[labelCount] = position;
+            lengths[labelCount] = labelLength;
+            labelCount++;
+            position += labelLength + 1;
+        }
+
+        // Build reversed name
+        bytes memory reversed = new bytes(name.length);
+        uint256 writePos = 0;
+
+        // Copy labels in reverse order
+        for (uint256 i = labelCount; i > 0; i--) {
+            uint256 labelPos = positions[i - 1];
+            uint256 labelLen = lengths[i - 1];
+
+            reversed[writePos] = bytes1(uint8(labelLen));
+            for (uint256 j = 0; j < labelLen; j++) {
+                reversed[writePos + 1 + j] = name[labelPos + 1 + j];
+            }
+            writePos += labelLen + 1;
+        }
+
+        // Add null terminator
+        reversed[writePos] = 0x00;
+
+        return reversed;
+    }
 }

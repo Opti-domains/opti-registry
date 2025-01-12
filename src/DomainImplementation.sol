@@ -4,11 +4,12 @@ pragma solidity ^0.8.17;
 import "./interfaces/IDomain.sol";
 import "./lib/DNSEncoder.sol";
 import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import "@openzeppelin/contracts/utils/Multicall.sol";
 
 /// @title DomainImplementation
 /// @notice Implementation contract for domain management with immutable args
 /// @dev Used as the base contract for cloneable proxies
-abstract contract DomainImplementation is IDomain {
+abstract contract DomainImplementation is IDomain, Multicall {
     using ClonesWithImmutableArgs for address;
 
     // Immutable args offsets
@@ -30,20 +31,21 @@ abstract contract DomainImplementation is IDomain {
     mapping(address => bool) public authorizedDelegates;
     bool public subdomainOwnerDelegation;
 
-    /// @notice Virtual function to check if caller is authorized as parent
-    /// @return bool True if caller is authorized
-    function isAuthorized() internal view virtual returns (bool) {
+    /// @notice Check if an address is authorized to manage this domain
+    /// @param addr The address to check authorization for
+    /// @return bool True if the address is authorized
+    function isAuthorized(address addr) public view virtual returns (bool) {
         bool isParentOwnerDelegated = false;
         address parentAddr = parent();
         if (parentAddr != address(0)) {
-            isParentOwnerDelegated = DomainImplementation(parentAddr).subdomainOwnerDelegation() && owner == msg.sender;
+            isParentOwnerDelegated = DomainImplementation(parentAddr).subdomainOwnerDelegation() && owner == addr;
         }
 
-        return msg.sender == parentAddr || authorizedDelegates[msg.sender] || isParentOwnerDelegated;
+        return addr == parentAddr || authorizedDelegates[addr] || isParentOwnerDelegated;
     }
 
     modifier onlyAuthorized() {
-        if (!isAuthorized()) {
+        if (!isAuthorized(msg.sender)) {
             revert Unauthorized();
         }
         _;
@@ -56,21 +58,21 @@ abstract contract DomainImplementation is IDomain {
 
     /// @notice Sets the owner of the domain
     /// @param _owner New owner address
-    function setOwner(address _owner) external onlyAuthorized {
+    function setOwner(address _owner) external virtual onlyAuthorized {
         emit OwnershipTransferred(owner, _owner);
         owner = _owner;
     }
 
     /// @notice Adds a new authorized delegate
     /// @param delegate Address to authorize
-    function addAuthorizedDelegate(address delegate, bool authorized) external onlyAuthorized {
+    function addAuthorizedDelegate(address delegate, bool authorized) external virtual onlyAuthorized {
         authorizedDelegates[delegate] = authorized;
         emit DelegateAuthorized(delegate, authorized);
     }
 
     /// @notice Sets whether owner delegation is enabled for subdomains
     /// @param enabled Whether to enable owner delegation
-    function setSubdomainOwnerDelegation(bool enabled) external onlyAuthorized {
+    function setSubdomainOwnerDelegation(bool enabled) external virtual onlyAuthorized {
         subdomainOwnerDelegation = enabled;
     }
 
@@ -79,6 +81,7 @@ abstract contract DomainImplementation is IDomain {
     /// @param subdomainOwner The owner of the new subdomain
     function registerSubdomain(string calldata label, address subdomainOwner)
         external
+        virtual
         onlyAuthorized
         returns (address)
     {
@@ -114,57 +117,40 @@ abstract contract DomainImplementation is IDomain {
     /// @return bytes The return data from the call
     function callSubdomain(bytes calldata reverseDnsEncoded, bytes calldata data)
         external
+        virtual
         onlyAuthorized
         returns (bytes memory)
     {
-        // If no more labels, execute the call on this contract
-        if (reverseDnsEncoded.length == 1 && reverseDnsEncoded[0] == 0) {
-            (bool success, bytes memory returnData) = address(this).call(data);
-            require(success, "Call failed");
-            return returnData;
-        }
-
-        // Get the first label length
-        uint8 labelLength = uint8(reverseDnsEncoded[0]);
-
-        // Extract the label
-        string memory currentLabel = string(reverseDnsEncoded[1:labelLength + 1]);
-
-        // Get the subdomain address
-        address subdomainAddr = subdomains[currentLabel];
-        if (subdomainAddr == address(0)) revert SubdomainNotFound();
-
-        // Get remaining encoded name
-        bytes calldata remainingLabels = reverseDnsEncoded[labelLength + 1:];
-
-        // Recursively call the subdomain
-        return DomainImplementation(subdomainAddr).callSubdomain(remainingLabels, data);
+        address target = getNestedAddress(reverseDnsEncoded);
+        (bool success, bytes memory returnData) = target.call(data);
+        require(success, "Call failed");
+        return returnData;
     }
 
     /// @notice Gets the implementation contract address
-    function implementation() public pure returns (address) {
+    function implementation() public pure virtual returns (address) {
         return _getArgAddress(IMPLEMENTATION_OFFSET);
     }
 
     /// @notice Gets the parent domain address
-    function parent() public pure returns (address) {
+    function parent() public pure virtual returns (address) {
         return _getArgAddress(PARENT_OFFSET);
     }
 
     /// @notice Gets the label of this domain
-    function label() public pure returns (string memory) {
+    function label() public pure virtual returns (string memory) {
         uint16 labelLength = _getArgUint16(LABEL_LENGTH_OFFSET);
         bytes memory labelBytes = _getArgBytes(LABEL_OFFSET, labelLength);
         return string(labelBytes);
     }
 
     /// @notice Gets the full name as array of labels
-    function name() public view returns (string[] memory) {
+    function name() public view virtual returns (string[] memory) {
         return DNSEncoder.decodeName(dnsEncoded());
     }
 
     /// @notice Gets the full DNS encoded name by traversing to root
-    function dnsEncoded() public view returns (bytes memory) {
+    function dnsEncoded() public view virtual returns (bytes memory) {
         // Get parent's encoded name first
         bytes memory parentEncoded;
         address parentAddr = parent();
@@ -186,8 +172,39 @@ abstract contract DomainImplementation is IDomain {
     }
 
     /// @notice Gets all subdomain names
-    function getSubdomainNames() external view returns (string[] memory) {
+    function getSubdomainNames() external view virtual returns (string[] memory) {
         return subdomainNames;
+    }
+
+    /// @notice Gets the address of a nested subdomain using reversed DNS encoded name
+    /// @param reverseDnsEncoded The reversed DNS encoded name
+    /// @return The address of the target domain
+    function getNestedAddress(bytes calldata reverseDnsEncoded) public view returns (address) {
+        // If no more labels, return this contract
+        if (reverseDnsEncoded.length == 1 && reverseDnsEncoded[0] == 0) {
+            return address(this);
+        }
+
+        // Get the first label length
+        uint8 labelLength = uint8(reverseDnsEncoded[0]);
+
+        // Extract the label
+        string memory currentLabel = string(reverseDnsEncoded[1:labelLength + 1]);
+
+        // Get the subdomain address
+        address subdomainAddr = subdomains[currentLabel];
+        if (subdomainAddr == address(0)) revert SubdomainNotFound();
+
+        // Get remaining encoded name
+        bytes calldata remainingLabels = reverseDnsEncoded[labelLength + 1:];
+
+        // Recursively get the nested address
+        return DomainImplementation(subdomainAddr).getNestedAddress(remainingLabels);
+    }
+
+    /// @notice Gets the resolver from parent or self
+    function resolver() public view virtual returns (address) {
+        return IDomain(parent()).resolver();
     }
 
     // Internal helper functions for reading immutable args
