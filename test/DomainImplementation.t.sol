@@ -20,6 +20,8 @@ contract TestDomain is DomainImplementation {
 }
 
 contract DomainImplementationTest is Test {
+    using ClonesWithImmutableArgs for address;
+
     TestDomain public domain;
     address public implementation;
     address public owner;
@@ -30,11 +32,21 @@ contract DomainImplementationTest is Test {
         owner = address(this);
         resolver = address(0x123);
 
-        domain = new TestDomain(implementation, address(0), "test");
+        bytes memory immutableArgs = abi.encodePacked(
+            implementation,
+            address(0), // parent
+            uint16(bytes("test").length), // label length
+            bytes("test") // label
+        );
+
+        domain = TestDomain(implementation.clone(immutableArgs));
+        vm.startPrank(address(0));
         domain.setOwner(owner);
+        domain.addAuthorizedDelegate(owner, true);
+        vm.stopPrank();
     }
 
-    function testAuthorization() public {
+    function testAuthorization() view public {
         assertTrue(domain.isAuthorized(address(this)));
         assertFalse(domain.isAuthorized(address(0x456)));
     }
@@ -60,9 +72,11 @@ contract DomainImplementationTest is Test {
     function testGetNestedAddress() public {
         // Register nested subdomains
         address sub1 = domain.registerSubdomain("sub1", address(this));
+        domain.setSubdomainOwnerDelegation(true);
+        vm.startPrank(address(this));
         TestDomain(sub1).registerSubdomain("sub2", address(this));
 
-        bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "sub2", bytes1(uint8(4)), "sub1", bytes1(uint8(0)));
+        bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "sub1", bytes1(uint8(4)), "sub2", bytes1(uint8(0)));
 
         address nestedAddr = domain.getNestedAddress(dnsEncoded);
         assertTrue(nestedAddr != address(0));
