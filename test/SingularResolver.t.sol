@@ -19,6 +19,8 @@ contract SingularResolverTest is Test {
         owner = address(this);
 
         root = new DomainRoot(implementation, owner, address(0));
+        root.registerSubdomain("test", owner);
+        root.setSubdomainOwnerDelegation(true);
         resolver = new SingularResolver();
         authorizer = new BasicResolverAuthorizer(address(root));
     }
@@ -27,7 +29,9 @@ contract SingularResolverTest is Test {
         bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "test", bytes1(uint8(0)));
         address addr = address(0xabc);
 
+        vm.prank(owner);
         resolver.setAddr(addr, dnsEncoded, authorizer);
+        vm.prank(address(authorizer));
         assertEq(resolver.addr(dnsEncoded), addr);
     }
 
@@ -37,6 +41,7 @@ contract SingularResolverTest is Test {
         string memory value = "value";
 
         resolver.setText(key, value, dnsEncoded, authorizer);
+        vm.prank(address(authorizer));
         assertEq(resolver.text(dnsEncoded, key), value);
     }
 
@@ -55,7 +60,7 @@ contract SingularResolverTest is Test {
         data[1] = abi.encodeCall(resolver.setText, ("key", "value", dnsEncoded, authorizer));
 
         resolver.multicall(data);
-
+        vm.startPrank(address(authorizer));
         assertEq(resolver.addr(dnsEncoded), address(0xabc));
         assertEq(resolver.text(dnsEncoded, "key"), "value");
     }
