@@ -7,8 +7,10 @@ import "../src/PermissionedRegistry.sol";
 import "../src/DomainRoot.sol";
 
 contract PermissionedRegistryTest is Test {
+    using ClonesWithImmutableArgs for address;
+
     PermissionedRegistry public registry;
-    DomainRoot public root;
+    TestDomain public root;
     address public implementation;
     uint256 public ownerPrivateKey;
     address public owner;
@@ -19,9 +21,21 @@ contract PermissionedRegistryTest is Test {
         ownerPrivateKey = 0x1234;
         owner = vm.addr(ownerPrivateKey);
         resolver = address(0x123);
+        bytes memory immutableArgs = abi.encodePacked(
+            implementation,
+            address(0), // parent
+            uint16(bytes("root").length), // label length
+            bytes("root") // label
+        );
 
-        root = new DomainRoot(implementation, owner, resolver);
+        // root = new DomainRoot(implementation, owner, resolver);
+        root = TestDomain(implementation.clone(immutableArgs));
         registry = new PermissionedRegistry();
+        vm.startPrank(address(0));
+        root.setOwner(owner);
+        root.addAuthorizedDelegate(owner, true);
+        root.addAuthorizedDelegate(address(registry), true);
+        vm.stopPrank();
     }
 
     function testRegisterWithValidSignature() public {
