@@ -46,7 +46,7 @@ contract DomainImplementationTest is Test {
         vm.stopPrank();
     }
 
-    function testAuthorization() view public {
+    function testAuthorization() public view {
         assertTrue(domain.isAuthorized(address(this)));
         assertFalse(domain.isAuthorized(address(0x456)));
     }
