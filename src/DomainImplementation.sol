@@ -42,7 +42,7 @@ contract DomainImplementation is IDomain, Multicall, Clone {
             isParentOwnerDelegated = DomainImplementation(parentAddr).subdomainOwnerDelegation() && owner == addr;
         }
 
-        return addr == parentAddr || authorizedDelegates[addr] || isParentOwnerDelegated;
+        return addr != address(0) && (addr == parentAddr || authorizedDelegates[addr] || isParentOwnerDelegated);
     }
 
     modifier onlyAuthorized() {

@@ -5,45 +5,24 @@ import "forge-std/Test.sol";
 import "../src/DomainImplementation.sol";
 import "../src/DomainRoot.sol";
 
-contract TestDomain is DomainImplementation {
-    constructor(address _implementation, address _parent, string memory _label) {
-        bytes memory immutableArgs =
-            abi.encodePacked(_implementation, _parent, uint16(bytes(_label).length), bytes(_label));
-
-        assembly {
-            let length := mload(immutableArgs)
-            let data := add(immutableArgs, 0x20)
-            sstore(0, mload(data))
-            if gt(length, 0x20) { sstore(1, mload(add(data, 0x20))) }
-        }
-    }
-}
-
 contract DomainImplementationTest is Test {
     using ClonesWithImmutableArgs for address;
 
-    TestDomain public domain;
+    DomainRoot public root;
+    DomainImplementation public domain;
     address public implementation;
     address public owner;
     address public resolver;
 
     function setUp() public {
-        implementation = address(new TestDomain(address(0), address(0), ""));
+        implementation = address(new DomainImplementation());
         owner = address(this);
         resolver = address(0x123);
 
-        bytes memory immutableArgs = abi.encodePacked(
-            implementation,
-            address(0), // parent
-            uint16(bytes("test").length), // label length
-            bytes("test") // label
-        );
+        root = new DomainRoot(implementation, owner, resolver);
+        root.setSubdomainOwnerDelegation(true);
 
-        domain = TestDomain(implementation.clone(immutableArgs));
-        vm.startPrank(address(0));
-        domain.setOwner(owner);
-        domain.addAuthorizedDelegate(owner, true);
-        vm.stopPrank();
+        domain = DomainImplementation(root.registerSubdomain("test", owner));
     }
 
     function testAuthorization() public view {
@@ -66,15 +45,14 @@ contract DomainImplementationTest is Test {
 
         assertTrue(subdomain != address(0));
         assertEq(domain.subdomains("sub"), subdomain);
-        assertEq(TestDomain(subdomain).owner(), subdomainOwner);
+        assertEq(DomainImplementation(subdomain).owner(), subdomainOwner);
     }
 
     function testGetNestedAddress() public {
         // Register nested subdomains
         address sub1 = domain.registerSubdomain("sub1", address(this));
         domain.setSubdomainOwnerDelegation(true);
-        vm.startPrank(address(this));
-        TestDomain(sub1).registerSubdomain("sub2", address(this));
+        DomainImplementation(sub1).registerSubdomain("sub2", address(this));
 
         bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "sub1", bytes1(uint8(4)), "sub2", bytes1(uint8(0)));
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import { TestDomain } from "./DomainImplementation.t.sol";
+import { DomainImplementation } from "../src/DomainImplementation.sol";
 import "../src/DomainRoot.sol";
 
 contract DomainRootTest is Test {
@@ -12,7 +12,7 @@ contract DomainRootTest is Test {
     address public resolver;
 
     function setUp() public {
-        implementation = address(new TestDomain(address(0), address(0), ""));
+        implementation = address(new DomainImplementation());
         owner = address(this);
         resolver = address(0x123);
 

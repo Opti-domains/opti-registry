@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import { TestDomain } from "./DomainImplementation.t.sol";
+import { DomainImplementation } from "../src/DomainImplementation.sol";
 import "../src/SingularResolver.sol";
 import "../src/BasicResolverAuthorizer.sol";
 import "../src/DomainRoot.sol";
@@ -15,7 +15,7 @@ contract SingularResolverTest is Test {
     address public owner;
 
     function setUp() public {
-        implementation = address(new TestDomain(address(0), address(0), ""));
+        implementation = address(new DomainImplementation());
         owner = address(this);
 
         root = new DomainRoot(implementation, owner, address(0));

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import { TestDomain } from "./DomainImplementation.t.sol";
+import { DomainImplementation } from "../src/DomainImplementation.sol";
 import "../src/PermissionedRegistry.sol";
 import "../src/DomainRoot.sol";
 
@@ -10,30 +10,21 @@ contract PermissionedRegistryTest is Test {
     using ClonesWithImmutableArgs for address;
 
     PermissionedRegistry public registry;
-    TestDomain public root;
+    DomainImplementation public root;
     address public implementation;
     uint256 public ownerPrivateKey;
     address public owner;
     address public resolver;
 
     function setUp() public {
-        implementation = address(new TestDomain(address(0), address(0), ""));
+        implementation = address(new DomainImplementation());
         ownerPrivateKey = 0x1234;
         owner = vm.addr(ownerPrivateKey);
         resolver = address(0x123);
-        bytes memory immutableArgs = abi.encodePacked(
-            implementation,
-            address(0), // parent
-            uint16(bytes("root").length), // label length
-            bytes("root") // label
-        );
 
-        // root = new DomainRoot(implementation, owner, resolver);
-        root = TestDomain(implementation.clone(immutableArgs));
+        root = new DomainRoot(implementation, owner, resolver);
         registry = new PermissionedRegistry();
-        vm.startPrank(address(0));
-        root.setOwner(owner);
-        root.addAuthorizedDelegate(owner, true);
+        vm.startPrank(owner);
         root.addAuthorizedDelegate(address(registry), true);
         vm.stopPrank();
     }

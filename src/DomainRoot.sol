@@ -23,7 +23,7 @@ contract DomainRoot is DomainImplementation {
     /// @param addr The address to check authorization for
     /// @return bool True if the address is the owner
     function isAuthorized(address addr) public view virtual override returns (bool) {
-        return addr == owner;
+        return addr == owner || super.isAuthorized(addr);
     }
 
     /// @notice Override parent to always return address(0)
