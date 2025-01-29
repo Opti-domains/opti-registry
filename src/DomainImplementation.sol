@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/Multicall.sol";
 /// @title DomainImplementation
 /// @notice Implementation contract for domain management with immutable args
 /// @dev Used as the base contract for cloneable proxies
-abstract contract DomainImplementation is IDomain, Multicall, Clone {
+contract DomainImplementation is IDomain, Multicall, Clone {
     using ClonesWithImmutableArgs for address;
 
     // Immutable args offsets
