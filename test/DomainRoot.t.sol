@@ -14,9 +14,8 @@ contract DomainRootTest is Test {
     function setUp() public {
         implementation = address(new DomainImplementation());
         owner = address(this);
-        resolver = address(0x123);
 
-        root = new DomainRoot(implementation, owner, resolver);
+        root = new DomainRoot(implementation, owner);
     }
 
     function testRootAuthorization() public {

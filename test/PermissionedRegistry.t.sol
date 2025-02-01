@@ -20,9 +20,8 @@ contract PermissionedRegistryTest is Test {
         implementation = address(new DomainImplementation());
         ownerPrivateKey = 0x1234;
         owner = vm.addr(ownerPrivateKey);
-        resolver = address(0x123);
 
-        root = new DomainRoot(implementation, owner, resolver);
+        root = new DomainRoot(implementation, owner);
         registry = new PermissionedRegistry();
         vm.startPrank(owner);
         root.addAuthorizedDelegate(address(registry), true);

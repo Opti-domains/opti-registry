@@ -17,9 +17,8 @@ contract DomainImplementationTest is Test {
     function setUp() public {
         implementation = address(new DomainImplementation());
         owner = address(this);
-        resolver = address(0x123);
 
-        root = new DomainRoot(implementation, owner, resolver);
+        root = new DomainRoot(implementation, owner);
         root.setSubdomainOwnerDelegation(true);
 
         domain = DomainImplementation(root.registerSubdomain("test", owner));

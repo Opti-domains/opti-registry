@@ -17,16 +17,18 @@ contract DeployScript is Script {
         // Deploy the base implementation contract
         DomainImplementation implementation = new DomainImplementation();
 
-        // Deploy the resolver
-        SingularResolver resolver = new SingularResolver();
-
         // Deploy the root domain with the implementation and resolver
         address deployer = msg.sender;
         DomainRoot root = new DomainRoot(
             address(implementation),
-            deployer, // Owner
-            address(resolver)
+            deployer // Owner
         );
+
+        // Deploy the resolver
+        SingularResolver resolver = new SingularResolver(address(root));
+
+        // Set the resolver
+        root.setResolver(address(resolver));
 
         // Deploy the permissioned registry
         PermissionedRegistry registry = new PermissionedRegistry();

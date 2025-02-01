@@ -1,6 +1,6 @@
-## Foundry
+## Opti.domains Singular Registry
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+**A modular and customizable ENS V2-like style recursive registry**
 
 Foundry consists of:
 
@@ -48,7 +48,8 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ source .env
+$ forge script script/Deploy.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY
 ```
 
 ### Cast

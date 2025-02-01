@@ -9,14 +9,22 @@ import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithIm
 contract DomainRoot is DomainImplementation {
     using ClonesWithImmutableArgs for address;
 
+    error NotAuthorized();
+
     address public immutable baseImplementation;
     address public baseResolver;
 
-    constructor(address _implementation, address _owner, address _resolver) {
+    constructor(address _implementation, address _owner) {
         baseImplementation = _implementation;
         owner = _owner;
-        baseResolver = _resolver;
         emit OwnershipTransferred(address(0), _owner);
+    }
+
+    /// @notice Set the base resolver address
+    /// @param _resolver The new resolver address
+    function setResolver(address _resolver) external {
+        if (!isAuthorized(msg.sender)) revert NotAuthorized();
+        baseResolver = _resolver;
     }
 
     /// @notice Override authorization to only allow owner
