@@ -18,12 +18,10 @@ contract SingularResolver is ISingularResolver, Multicall {
     mapping(bytes32 => address) private addresses;
     /// @notice Mapping of domain hash to key to text value
     mapping(bytes32 => mapping(string => string)) private texts;
+    /// @notice Mapping of domain hash to key to data value
+    mapping(bytes32 => mapping(string => bytes)) private data;
     /// @notice Mapping of domain hash to content hash
     mapping(bytes32 => bytes) private contenthashes;
-    /// @notice Mapping of domain hash to DNS name to resource type to record
-    mapping(bytes32 => mapping(bytes => mapping(uint16 => bytes))) private dnsRecords;
-    /// @notice Mapping of domain hash to zone hash
-    mapping(bytes32 => bytes) private zonehashes;
 
     constructor(address _root) {
         root = IDomain(_root);
@@ -41,10 +39,10 @@ contract SingularResolver is ISingularResolver, Multicall {
     }
 
     /// @notice Sets the address record for a domain
-    /// @param addr The address to set
     /// @param dnsEncoded The DNS encoded name to set the record for
-    function setAddr(address addr, bytes calldata dnsEncoded) external onlyAuthorized(dnsEncoded) {
-        bytes32 node = keccak256(dnsEncoded);
+    /// @param addr The address to set
+    function setAddr(bytes calldata dnsEncoded, address addr) external onlyAuthorized(dnsEncoded) {
+        bytes32 node = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
         addresses[node] = addr;
         emit AddrChanged(node, addr);
     }
@@ -53,18 +51,18 @@ contract SingularResolver is ISingularResolver, Multicall {
     /// @param dnsEncoded The DNS encoded name to get the record for
     /// @return The resolved address
     function addr(bytes calldata dnsEncoded) external view returns (address) {
-        return addresses[keccak256(dnsEncoded)];
+        return addresses[DNSEncoder.dnsEncodedNamehash(dnsEncoded)];
     }
 
     /// @notice Sets a text record for a domain
+    /// @param dnsEncoded The DNS encoded name to set the record for
     /// @param key The key for the text record
     /// @param value The value to set
-    /// @param dnsEncoded The DNS encoded name to set the record for
-    function setText(string calldata key, string calldata value, bytes calldata dnsEncoded)
+    function setText(bytes calldata dnsEncoded, string calldata key, string calldata value)
         external
         onlyAuthorized(dnsEncoded)
     {
-        bytes32 node = keccak256(dnsEncoded);
+        bytes32 node = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
         texts[node][key] = value;
         emit TextChanged(node, key, value);
     }
@@ -74,14 +72,35 @@ contract SingularResolver is ISingularResolver, Multicall {
     /// @param key The key for the text record
     /// @return The text value
     function text(bytes calldata dnsEncoded, string calldata key) external view returns (string memory) {
-        return texts[keccak256(dnsEncoded)][key];
+        return texts[DNSEncoder.dnsEncodedNamehash(dnsEncoded)][key];
+    }
+
+    /// @notice Sets a data record for a domain
+    /// @param dnsEncoded The DNS encoded name to set the record for
+    /// @param key The key for the data record
+    /// @param value The value to set
+    function setData(bytes calldata dnsEncoded, string calldata key, bytes calldata value)
+        external
+        onlyAuthorized(dnsEncoded)
+    {
+        bytes32 node = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
+        data[node][key] = value;
+        emit DataChanged(node, key, value);
+    }
+
+    /// @notice Gets a data record for a domain
+    /// @param dnsEncoded The DNS encoded name to get the record for
+    /// @param key The key for the data record
+    /// @return The data value
+    function getData(bytes calldata dnsEncoded, string calldata key) external view returns (bytes memory) {
+        return data[DNSEncoder.dnsEncodedNamehash(dnsEncoded)][key];
     }
 
     /// @notice Sets the content hash for a domain
-    /// @param hash The content hash to set
     /// @param dnsEncoded The DNS encoded name to set the record for
-    function setContenthash(bytes calldata hash, bytes calldata dnsEncoded) external onlyAuthorized(dnsEncoded) {
-        bytes32 node = keccak256(dnsEncoded);
+    /// @param hash The content hash to set
+    function setContenthash(bytes calldata dnsEncoded, bytes calldata hash) external onlyAuthorized(dnsEncoded) {
+        bytes32 node = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
         contenthashes[node] = hash;
         emit ContenthashChanged(node, hash);
     }
@@ -90,6 +109,6 @@ contract SingularResolver is ISingularResolver, Multicall {
     /// @param dnsEncoded The DNS encoded name to get the record for
     /// @return The content hash
     function contenthash(bytes calldata dnsEncoded) external view returns (bytes memory) {
-        return contenthashes[keccak256(dnsEncoded)];
+        return contenthashes[DNSEncoder.dnsEncodedNamehash(dnsEncoded)];
     }
 }

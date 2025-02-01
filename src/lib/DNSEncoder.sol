@@ -187,4 +187,37 @@ library DNSEncoder {
 
         return reversed;
     }
+
+    /// @notice Converts a DNS encoded name to namehash format
+    /// @param name The DNS encoded name to convert
+    /// @return The namehash of the domain
+    function dnsEncodedNamehash(bytes memory name) internal pure returns (bytes32) {
+        if (!isValidDomain(name)) revert InvalidDomain();
+        return _dnsEncodedNamehash(name, 0);
+    }
+
+    /// @dev Internal recursive helper for dnsEncodedNamehash
+    /// @param name The remaining DNS encoded name to process
+    /// @param position Current position in the name
+    /// @return Current node hash
+    function _dnsEncodedNamehash(bytes memory name, uint256 position) private pure returns (bytes32) {
+        // Base case - end of name
+        if (position >= name.length || uint8(name[position]) == 0) {
+            return bytes32(0);
+        }
+
+        uint8 labelLength = uint8(name[position]);
+
+        // Extract the label
+        bytes memory label = new bytes(labelLength);
+        for (uint256 i = 0; i < labelLength; i++) {
+            label[i] = name[position + 1 + i];
+        }
+
+        // Recursively process rest of name
+        bytes32 remainderHash = _dnsEncodedNamehash(name, position + labelLength + 1);
+
+        // Combine hashes in reverse order
+        return keccak256(abi.encodePacked(remainderHash, keccak256(label)));
+    }
 }

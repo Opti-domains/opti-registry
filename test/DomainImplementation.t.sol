@@ -59,12 +59,14 @@ contract DomainImplementationTest is Test {
         assertTrue(nestedAddr != address(0));
     }
 
-    function testFailUnauthorizedSubdomainRegistration() public {
+    function testUnauthorizedSubdomainRegistration() public {
         vm.prank(address(0x456));
+        vm.expectRevert(DomainImplementation.Unauthorized.selector);
         domain.registerSubdomain("sub", address(this));
     }
 
-    function testFailInvalidLabel() public {
+    function testInvalidLabel() public {
+        vm.expectRevert(DomainImplementation.InvalidLabel.selector);
         domain.registerSubdomain("", address(this));
     }
 }

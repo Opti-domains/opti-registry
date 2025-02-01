@@ -31,7 +31,7 @@ contract PermissionedRegistryTest is Test {
     function testRegisterWithValidSignature() public {
         string memory label = "test";
         address newOwner = address(0xabc);
-        uint256 deadline = block.timestamp + 1 hours;
+        uint256 deadline = vm.getBlockTimestamp() + 1 hours;
         bytes32 nonce = bytes32(uint256(1));
 
         bytes32 structHash = registry.getStructHash(address(root), label, newOwner, deadline, nonce);
@@ -47,10 +47,12 @@ contract PermissionedRegistryTest is Test {
         assertEq(DomainImplementation(subdomain).owner(), newOwner);
     }
 
-    function testFailExpiredSignature() public {
+    function testExpiredSignature() public {
+        vm.warp(1738428733);
+
         string memory label = "test";
         address newOwner = address(0xabc);
-        uint256 deadline = block.timestamp - 1 hours;
+        uint256 deadline = vm.getBlockTimestamp() - 1 hours;
         bytes32 nonce = bytes32(uint256(1));
 
         bytes32 structHash = registry.getStructHash(address(root), label, newOwner, deadline, nonce);
@@ -60,6 +62,7 @@ contract PermissionedRegistryTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
         bytes memory signature = abi.encodePacked(r, s, v);
 
+        vm.expectRevert(PermissionedRegistry.InvalidSignature.selector);
         registry.register(address(root), label, newOwner, deadline, nonce, signature);
     }
 }

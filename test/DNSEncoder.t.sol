@@ -80,4 +80,19 @@ contract DNSEncoderTest is Test {
         bytes memory reversed = DNSEncoder.reverseDnsEncoded(original);
         assertEq0(reversed, expected);
     }
+
+    function testDnsEncodedNamehash() public {
+        bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "test", bytes1(uint8(0)));
+
+        bytes32 namehash1 = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
+        assertEq(namehash1, keccak256(abi.encodePacked(bytes32(0), keccak256(bytes("test")))));
+
+        bytes32 namehash2 = DNSEncoder.dnsEncodedNamehash(hex"0b6f707469646f6d61696e730365746800");
+        assertEq(namehash2, 0x1dabf510ed6940730bc64780f29034ef80f9b15ccf4a267701a74efc4e789f46);
+
+        bytes32 namehash3 = DNSEncoder.dnsEncodedNamehash(
+            hex"016101620163016401650166016701680169016a016b016c016d016e016f0170017101720173017401750176017701780179017a0b6f707469646f6d61696e730365746800"
+        );
+        assertEq(namehash3, 0x9bf3be41b05876aca7fdd3f6a521543ba6ef525606c25065fc66f1df6042516f);
+    }
 }
