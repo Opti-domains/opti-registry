@@ -172,7 +172,24 @@ contract DomainImplementation is IDomain, Multicall, Clone {
         return abi.encodePacked(bytes1(uint8(labelBytes.length)), labelBytes, parentEncoded);
     }
 
-    /// @notice Gets all subdomain names
+    /// @notice Gets the total number of subdomain names
+    function getSubdomainCount() public view virtual returns (uint256) {
+        return subdomainNames.length;
+    }
+
+    /// @notice Gets a slice of subdomain names
+    /// @param start The starting index
+    /// @param length The number of names to return
+    function getSubdomainNames(uint256 start, uint256 length) public view virtual returns (string[] memory) {
+        require(start + length <= subdomainNames.length, "Invalid range");
+        string[] memory slice = new string[](length);
+        for (uint256 i = 0; i < length; i++) {
+            slice[i] = subdomainNames[start + i];
+        }
+        return slice;
+    }
+
+    /// @notice Gets a list of all subdomain names
     function getSubdomainNames() external view virtual returns (string[] memory) {
         return subdomainNames;
     }

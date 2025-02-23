@@ -11,11 +11,11 @@ interface IDomain {
     /// @notice Emitted when a delegate is authorized
     event DelegateAuthorized(address indexed delegate, bool authorized);
 
-    /// @notice Sets the owner of the domain (only callable by parent)
+    /// @notice Sets the owner of the domain (only callable by authorized)
     /// @param owner New owner address
     function setOwner(address owner) external;
 
-    /// @notice Registers a new subdomain (only callable by owner)
+    /// @notice Registers a new subdomain (only callable by authorized)
     /// @param label The label for the subdomain
     /// @param subdomainOwner The owner of the new subdomain
     /// @return The address of the new subdomain contract
@@ -45,8 +45,13 @@ interface IDomain {
     /// @notice Gets the full DNS encoded name
     function dnsEncoded() external view returns (bytes memory);
 
-    /// @notice Gets all subdomain names
-    function getSubdomainNames() external view returns (string[] memory);
+    /// @notice Gets the total number of subdomain names
+    function getSubdomainCount() external view returns (uint256);
+
+    /// @notice Gets a slice of subdomain names
+    /// @param start The starting index
+    /// @param length The number of names to return
+    function getSubdomainNames(uint256 start, uint256 length) external view returns (string[] memory);
 
     /// @notice Gets the proxy address for a subdomain
     /// @param name The subdomain name
