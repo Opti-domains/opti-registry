@@ -13,30 +13,74 @@ contract DeployDeterministicScript is Script {
     // Zero salt for deterministic deployment
     bytes32 constant ZERO_SALT = bytes32(0);
 
-    function setUp() public { }
+    // Deployment addresses
+    address public implementationLogicAddr;
+    address public implementationProxyAddr;
+    address public resolverLogicAddr;
+    address public resolverProxyAddr;
+    address public rootAddr;
+    address public registryAddr;
+
+    function setUp() public {
+        // Compute deterministic addresses
+        implementationLogicAddr =
+            vm.computeCreate2Address(ZERO_SALT, keccak256(type(DomainImplementation).creationCode), CREATE2_FACTORY);
+
+        bytes memory proxyInitCode = abi.encodePacked(
+            type(TransparentUpgradeableProxy).creationCode, abi.encode(implementationLogicAddr, msg.sender, "")
+        );
+        implementationProxyAddr = vm.computeCreate2Address(ZERO_SALT, keccak256(proxyInitCode), CREATE2_FACTORY);
+
+        bytes memory rootInitCode =
+            abi.encodePacked(type(DomainRoot).creationCode, abi.encode(implementationProxyAddr, msg.sender));
+        rootAddr = vm.computeCreate2Address(ZERO_SALT, keccak256(rootInitCode), CREATE2_FACTORY);
+
+        bytes memory resolverInitCode = abi.encodePacked(type(SingularResolver).creationCode, abi.encode(rootAddr));
+        resolverLogicAddr = vm.computeCreate2Address(ZERO_SALT, keccak256(resolverInitCode), CREATE2_FACTORY);
+
+        proxyInitCode = abi.encodePacked(
+            type(TransparentUpgradeableProxy).creationCode, abi.encode(resolverLogicAddr, msg.sender, "")
+        );
+        resolverProxyAddr = vm.computeCreate2Address(ZERO_SALT, keccak256(proxyInitCode), CREATE2_FACTORY);
+
+        registryAddr =
+            vm.computeCreate2Address(ZERO_SALT, keccak256(type(PermissionedRegistry).creationCode), CREATE2_FACTORY);
+    }
+
+    function deployImplementation() internal returns (DomainImplementation, TransparentUpgradeableProxy) {
+        // Deploy implementation logic if needed
+        DomainImplementation implementationLogic = DomainImplementation(implementationLogicAddr);
+        if (address(implementationLogic).code.length == 0) {
+            implementationLogic = new DomainImplementation{ salt: ZERO_SALT }();
+        }
+
+        // Deploy implementation proxy if needed
+        TransparentUpgradeableProxy implementationProxy = TransparentUpgradeableProxy(payable(implementationProxyAddr));
+        if (address(implementationProxy).code.length == 0) {
+            implementationProxy =
+                new TransparentUpgradeableProxy{ salt: ZERO_SALT }(address(implementationLogic), msg.sender, "");
+        }
+
+        return (implementationLogic, implementationProxy);
+    }
+
+    function deployResolver(address root) internal returns (SingularResolver, TransparentUpgradeableProxy) {
+        // Deploy resolver logic if needed
+        SingularResolver resolverLogic = SingularResolver(resolverLogicAddr);
+        if (address(resolverLogic).code.length == 0) {
+            resolverLogic = new SingularResolver{ salt: ZERO_SALT }(root);
+        }
+
+        // Deploy resolver proxy if needed
+        TransparentUpgradeableProxy resolverProxy = TransparentUpgradeableProxy(payable(resolverProxyAddr));
+        if (address(resolverProxy).code.length == 0) {
+            resolverProxy = new TransparentUpgradeableProxy{ salt: ZERO_SALT }(address(resolverLogic), msg.sender, "");
+        }
+
+        return (resolverLogic, resolverProxy);
+    }
 
     function run() public {
-        address deployer = msg.sender;
-
-        // Start broadcasting transactions
-        vm.startBroadcast();
-
-        // Get the deterministic addresses
-        address implementationLogicAddr =
-            vm.computeCreate2Address(ZERO_SALT, keccak256(type(DomainImplementation).creationCode), CREATE2_FACTORY);
-        address implementationProxyAddr = vm.computeCreate2Address(
-            ZERO_SALT, keccak256(type(TransparentUpgradeableProxy).creationCode), CREATE2_FACTORY
-        );
-        address rootAddr =
-            vm.computeCreate2Address(ZERO_SALT, keccak256(type(DomainRoot).creationCode), CREATE2_FACTORY);
-        address resolverLogicAddr =
-            vm.computeCreate2Address(ZERO_SALT, keccak256(type(SingularResolver).creationCode), CREATE2_FACTORY);
-        address resolverProxyAddr = vm.computeCreate2Address(
-            ZERO_SALT, keccak256(type(TransparentUpgradeableProxy).creationCode), CREATE2_FACTORY
-        );
-        address registryAddr =
-            vm.computeCreate2Address(ZERO_SALT, keccak256(type(PermissionedRegistry).creationCode), CREATE2_FACTORY);
-
         // Print deterministic addresses
         console.log("Implementation Logic:", implementationLogicAddr);
         console.log("Implementation Proxy:", implementationProxyAddr);
@@ -46,67 +90,40 @@ contract DeployDeterministicScript is Script {
         console.log("Registry:", registryAddr);
         console.log("");
 
-        // Deploy the base implementation contract using CREATE2 if not already deployed
-        DomainImplementation implementationLogic = DomainImplementation(implementationLogicAddr);
-        if (address(implementationLogic).code.length == 0) {
-            implementationLogic = new DomainImplementation{ salt: ZERO_SALT }();
-        }
+        vm.startBroadcast();
 
-        // Deploy the implementation proxy if not already deployed
-        TransparentUpgradeableProxy implementationProxy = TransparentUpgradeableProxy(payable(implementationProxyAddr));
-        if (address(implementationProxy).code.length == 0) {
-            implementationProxy = new TransparentUpgradeableProxy{ salt: ZERO_SALT }(
-                address(implementationLogic),
-                address(deployer),
-                "" // No initialization data needed
-            );
-        }
+        // Deploy implementation contracts
+        (DomainImplementation implementationLogic, TransparentUpgradeableProxy implementationProxy) =
+            deployImplementation();
 
-        // Deploy the root domain if not already deployed
+        // Deploy root if needed
         DomainRoot root = DomainRoot(rootAddr);
         if (address(root).code.length == 0) {
-            root = new DomainRoot{ salt: ZERO_SALT }(
-                address(implementationProxy),
-                deployer // Owner
-            );
+            root = new DomainRoot{ salt: ZERO_SALT }(address(implementationProxy), msg.sender);
         }
 
-        // Deploy the resolver logic if not already deployed
-        SingularResolver resolverLogic = SingularResolver(resolverLogicAddr);
-        if (address(resolverLogic).code.length == 0) {
-            resolverLogic = new SingularResolver{ salt: ZERO_SALT }(address(root));
-        }
+        // Deploy resolver contracts
+        (SingularResolver resolverLogic, TransparentUpgradeableProxy resolverProxy) = deployResolver(address(root));
 
-        // Deploy the resolver proxy if not already deployed
-        TransparentUpgradeableProxy resolverProxy = TransparentUpgradeableProxy(payable(resolverProxyAddr));
-        if (address(resolverProxy).code.length == 0) {
-            resolverProxy = new TransparentUpgradeableProxy{ salt: ZERO_SALT }(
-                address(resolverLogic),
-                address(deployer),
-                "" // No initialization data needed
-            );
-        }
-
-        // Set the resolver proxy if not already set
+        // Set resolver if needed
         if (root.resolver() != address(resolverProxy)) {
             root.setResolver(address(resolverProxy));
         }
 
-        // Deploy the permissioned registry if not already deployed
+        // Deploy registry if needed
         PermissionedRegistry registry = PermissionedRegistry(registryAddr);
         if (address(registry).code.length == 0) {
             registry = new PermissionedRegistry{ salt: ZERO_SALT }();
         }
 
-        // Setup .eth domain if not already set up
+        // Setup .eth domain if needed
         DomainImplementation ethDomain = DomainImplementation(root.subdomains("eth"));
         if (address(ethDomain) == address(0)) {
-            ethDomain = DomainImplementation(root.registerSubdomain("eth", address(deployer)));
+            ethDomain = DomainImplementation(root.registerSubdomain("eth", msg.sender));
             ethDomain.setSubdomainOwnerDelegation(true);
             ethDomain.addAuthorizedDelegate(address(registry), true);
         }
 
-        // Stop broadcasting transactions
         vm.stopBroadcast();
 
         // Log deployed addresses
