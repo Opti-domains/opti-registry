@@ -28,13 +28,19 @@ contract SingularResolverTest is Test {
     function testSetAddr() public {
         bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "test", bytes1(uint8(0)));
         address addr = address(0xabc);
+        bytes memory addrOther = bytes(abi.encodePacked(uint256(0x987)));
         bytes32 node = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
 
         vm.prank(owner);
         resolver.setAddr(dnsEncoded, addr);
         vm.stopPrank();
 
+        vm.prank(owner);
+        resolver.setAddr(dnsEncoded, 1, addrOther);
+        vm.stopPrank();
+
         assertEq(resolver.addr(dnsEncoded), addr);
+        assertEq(resolver.addr(dnsEncoded, 1), addrOther);
     }
 
     function testSetText() public {
@@ -111,7 +117,7 @@ contract SingularResolverTest is Test {
         bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "test", bytes1(uint8(0)));
 
         bytes[] memory data = new bytes[](4);
-        data[0] = abi.encodeCall(resolver.setAddr, (dnsEncoded, address(0xabc)));
+        data[0] = abi.encodeWithSelector(0xf00eebf4, dnsEncoded, address(0xabc));
         data[1] = abi.encodeCall(resolver.setText, (dnsEncoded, "key", "value"));
         data[2] = abi.encodeCall(resolver.setData, (dnsEncoded, "datakey", hex"1234"));
         data[3] = abi.encodeCall(resolver.setContenthash, (dnsEncoded, hex"1234567890"));

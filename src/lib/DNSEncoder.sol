@@ -134,14 +134,16 @@ library DNSEncoder {
     /// @param ch The character to validate
     /// @return bool True if the character is valid
     function _isValidLabelChar(bytes1 ch) private pure returns (bool) {
-        // Letters, digits, and hyphens only
-        // ASCII: 0-9, A-Z, a-z, -
+        // Letters, digits, hyphens and underscores only
+        // ASCII: 0-9, A-Z, a-z, -, _
         return (
             (ch >= 0x30 && ch <= 0x39) // 0-9
                 || (ch >= 0x41 && ch <= 0x5A) // A-Z
                 || (ch >= 0x61 && ch <= 0x7A) // a-z
-                || ch == 0x2D
-        ); // hyphen
+                || ch == 0x2D // hyphen
+                || ch == 0x5F
+        ) // underscore
+        ;
     }
 
     /// @notice Reverses a DNS encoded name

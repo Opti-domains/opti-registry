@@ -6,10 +6,13 @@
 
 ### OP Sepolia
 
-* Implementation: [0xE5Db2Dc984c5A80631439DE510E278f39dC11B97](https://sepolia-optimism.etherscan.io/address/0xE5Db2Dc984c5A80631439DE510E278f39dC11B97)
-* Resolver: [0x5d3C7E7a787f6ca841437BB59504f0C5d073b2c5](https://sepolia-optimism.etherscan.io/address/0x5d3C7E7a787f6ca841437BB59504f0C5d073b2c5)
-* Root: [0x57348b15057cC6FeAe36Cd0Fc2018618809B4c5F](https://sepolia-optimism.etherscan.io/address/0x57348b15057cC6FeAe36Cd0Fc2018618809B4c5F)
-* Registry: [0x0793454a408c13bD6623c045dc7024EC9680b8C3](https://sepolia-optimism.etherscan.io/address/0x0793454a408c13bD6623c045dc7024EC9680b8C3)
+- Implementation Logic: [0x8fD2667c8C9080C295566a5F460ee6873F2101eA](https://sepolia-optimism.etherscan.io/address/0x8fD2667c8C9080C295566a5F460ee6873F2101eA)
+- Implementation Proxy: [0xe668886679DB6C1B9a314eD6D353696693ED6176](https://sepolia-optimism.etherscan.io/address/0xe668886679DB6C1B9a314eD6D353696693ED6176)
+- Resolver Logic: [0x76d94A0eC4286eeB9DB569CA09ED3AF004289BcB](https://sepolia-optimism.etherscan.io/address/0x76d94A0eC4286eeB9DB569CA09ED3AF004289BcB)
+- Resolver Proxy: [0x33b3EB66235CA2eC9A023a24c59C5B4ca8f5F231](https://sepolia-optimism.etherscan.io/address/0x33b3EB66235CA2eC9A023a24c59C5B4ca8f5F231)
+- Root: [0x3f39B6ACbE09421587e125B556E045a382aA4550](https://sepolia-optimism.etherscan.io/address/0x3f39B6ACbE09421587e125B556E045a382aA4550)
+- ETH: [0xeE7bf06Df559D399E37375D26A290965D8383Eda](https://sepolia-optimism.etherscan.io/address/0xeE7bf06Df559D399E37375D26A290965D8383Eda)
+- Registry: [0x8121e862bb196d4a42182e430713b96d78c813bb](https://sepolia-optimism.etherscan.io/address/0x8121e862bb196d4a42182e430713b96d78c813bb)
 
 ## Usage
 
@@ -47,7 +50,7 @@ $ anvil
 
 ```shell
 $ source .env
-$ forge script script/Deploy.s.sol:DeployScript --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify --chain optimism-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
+$ forge script script/DeployDeterministic.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify --chain optimism-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
 ### Cast
