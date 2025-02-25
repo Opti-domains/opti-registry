@@ -4,15 +4,25 @@
 
 ## Deployments
 
+### OP Mainnet
+
+- Implementation Logic: [0x6de96571556a1306833f980138A63aC57Df7A349](https://optimistic.etherscan.io/address/0x6de96571556a1306833f980138A63aC57Df7A349)
+- Implementation Proxy: [0xaC95E0745B686EE0a2Ed1aD8307B514aA2E0D893](https://optimistic.etherscan.io/address/0xaC95E0745B686EE0a2Ed1aD8307B514aA2E0D893)
+- Resolver Logic: [0x10264C1cC407f2196F0db753415D9fc255C298a8](https://optimistic.etherscan.io/address/0x10264C1cC407f2196F0db753415D9fc255C298a8)
+- Resolver Proxy: [0xF486bfD0fE7c136231052bC9DD7C4f57870c8Ef1](https://optimistic.etherscan.io/address/0xF486bfD0fE7c136231052bC9DD7C4f57870c8Ef1)
+- Root: [0x6E3fF3d77d4cb7Ae4b2f4c5112240596E37526da](https://optimistic.etherscan.io/address/0x6E3fF3d77d4cb7Ae4b2f4c5112240596E37526da)
+- ETH: [0xb2A0DE957B080d238E319845FBceAaAc726979c3](https://optimistic.etherscan.io/address/0xb2A0DE957B080d238E319845FBceAaAc726979c3)
+- Registry: [0x02fB1fEb8cBf1E35c55e6b930452E011d5FB6217](https://optimistic.etherscan.io/address/0x02fB1fEb8cBf1E35c55e6b930452E011d5FB6217)
+
 ### OP Sepolia
 
-- Implementation Logic: [0xa5e4fB359e3650eBDE78EE5b510372a04B943435](https://sepolia-optimism.etherscan.io/address/0xa5e4fB359e3650eBDE78EE5b510372a04B943435)
-- Implementation Proxy: [0xc984050B5e3E34cE12b17Ed9e54732498A17c970](https://sepolia-optimism.etherscan.io/address/0xc984050B5e3E34cE12b17Ed9e54732498A17c970)
-- Resolver Logic: [0x4F8CA067C66d4117BF7C5Ce493830D08d8004539](https://sepolia-optimism.etherscan.io/address/0x4F8CA067C66d4117BF7C5Ce493830D08d8004539)
-- Resolver Proxy: [0xF262CF18a5f0d15C772DE7a36519Ae4D2Fd6CfBB](https://sepolia-optimism.etherscan.io/address/0xF262CF18a5f0d15C772DE7a36519Ae4D2Fd6CfBB)
-- Root: [0xcC5f4208E139509aC35088c52b305B9fBB4aEF30](https://sepolia-optimism.etherscan.io/address/0xcC5f4208E139509aC35088c52b305B9fBB4aEF30)
-- ETH: [0xb4bdE331Ec292e0542Af66EC31a72d459A87bF49](https://sepolia-optimism.etherscan.io/address/0xb4bdE331Ec292e0542Af66EC31a72d459A87bF49)
-- Registry: [0xf9aE710B96f0B058d28D58062deDb5D3a421f4AA](https://sepolia-optimism.etherscan.io/address/0xf9aE710B96f0B058d28D58062deDb5D3a421f4AA)
+- Implementation Logic: [0x6de96571556a1306833f980138A63aC57Df7A349](https://sepolia-optimism.etherscan.io/address/0x6de96571556a1306833f980138A63aC57Df7A349)
+- Implementation Proxy: [0xaC95E0745B686EE0a2Ed1aD8307B514aA2E0D893](https://sepolia-optimism.etherscan.io/address/0xaC95E0745B686EE0a2Ed1aD8307B514aA2E0D893)
+- Resolver Logic: [0x10264C1cC407f2196F0db753415D9fc255C298a8](https://sepolia-optimism.etherscan.io/address/0x10264C1cC407f2196F0db753415D9fc255C298a8)
+- Resolver Proxy: [0xF486bfD0fE7c136231052bC9DD7C4f57870c8Ef1](https://sepolia-optimism.etherscan.io/address/0xF486bfD0fE7c136231052bC9DD7C4f57870c8Ef1)
+- Root: [0x6E3fF3d77d4cb7Ae4b2f4c5112240596E37526da](https://sepolia-optimism.etherscan.io/address/0x6E3fF3d77d4cb7Ae4b2f4c5112240596E37526da)
+- ETH: [0xb2A0DE957B080d238E319845FBceAaAc726979c3](https://sepolia-optimism.etherscan.io/address/0xb2A0DE957B080d238E319845FBceAaAc726979c3)
+- Registry: [0x02fB1fEb8cBf1E35c55e6b930452E011d5FB6217](https://sepolia-optimism.etherscan.io/address/0x02fB1fEb8cBf1E35c55e6b930452E011d5FB6217)
 
 ## Usage
 

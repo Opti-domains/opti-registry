@@ -17,7 +17,7 @@ interface ISingularResolver {
     function text(bytes calldata dnsEncoded, string calldata key) external view returns (string memory);
 
     function setData(bytes calldata dnsEncoded, string calldata key, bytes calldata value) external;
-    function getData(bytes calldata dnsEncoded, string calldata key) external view returns (bytes memory);
+    function data(bytes calldata dnsEncoded, string calldata key) external view returns (bytes memory);
 
     function setContenthash(bytes calldata dnsEncoded, bytes calldata hash) external;
     function contenthash(bytes calldata dnsEncoded) external view returns (bytes memory);

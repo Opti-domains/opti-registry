@@ -6,6 +6,7 @@ import { DomainRoot } from "../src/DomainRoot.sol";
 import { PermissionedRegistry } from "../src/PermissionedRegistry.sol";
 import { SingularResolver } from "../src/SingularResolver.sol";
 import { DomainImplementation } from "../src/DomainImplementation.sol";
+import { DomainUpgradeableProxy } from "../src/DomainUpgradeableProxy.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
@@ -27,7 +28,7 @@ contract DeployDeterministicScript is Script {
             vm.computeCreate2Address(ZERO_SALT, keccak256(type(DomainImplementation).creationCode), CREATE2_FACTORY);
 
         bytes memory proxyInitCode = abi.encodePacked(
-            type(TransparentUpgradeableProxy).creationCode, abi.encode(implementationLogicAddr, msg.sender, "")
+            type(DomainUpgradeableProxy).creationCode, abi.encode(implementationLogicAddr, msg.sender, "")
         );
         implementationProxyAddr = vm.computeCreate2Address(ZERO_SALT, keccak256(proxyInitCode), CREATE2_FACTORY);
 
@@ -47,7 +48,7 @@ contract DeployDeterministicScript is Script {
             vm.computeCreate2Address(ZERO_SALT, keccak256(type(PermissionedRegistry).creationCode), CREATE2_FACTORY);
     }
 
-    function deployImplementation() internal returns (DomainImplementation, TransparentUpgradeableProxy) {
+    function deployImplementation() internal returns (DomainImplementation, DomainUpgradeableProxy) {
         // Deploy implementation logic if needed
         DomainImplementation implementationLogic = DomainImplementation(implementationLogicAddr);
         if (address(implementationLogic).code.length == 0) {
@@ -55,10 +56,10 @@ contract DeployDeterministicScript is Script {
         }
 
         // Deploy implementation proxy if needed
-        TransparentUpgradeableProxy implementationProxy = TransparentUpgradeableProxy(payable(implementationProxyAddr));
+        DomainUpgradeableProxy implementationProxy = DomainUpgradeableProxy(payable(implementationProxyAddr));
         if (address(implementationProxy).code.length == 0) {
             implementationProxy =
-                new TransparentUpgradeableProxy{ salt: ZERO_SALT }(address(implementationLogic), msg.sender, "");
+                new DomainUpgradeableProxy{ salt: ZERO_SALT }(address(implementationLogic), msg.sender, "");
         }
 
         return (implementationLogic, implementationProxy);
@@ -93,14 +94,15 @@ contract DeployDeterministicScript is Script {
         vm.startBroadcast();
 
         // Deploy implementation contracts
-        (DomainImplementation implementationLogic, TransparentUpgradeableProxy implementationProxy) =
-            deployImplementation();
+        (DomainImplementation implementationLogic, DomainUpgradeableProxy implementationProxy) = deployImplementation();
 
         // Deploy root if needed
         DomainRoot root = DomainRoot(rootAddr);
         if (address(root).code.length == 0) {
             root = new DomainRoot{ salt: ZERO_SALT }(address(implementationProxy), msg.sender);
         }
+
+        root.setSubdomainOwnerDelegation(true, true);
 
         // Deploy resolver contracts
         (SingularResolver resolverLogic, TransparentUpgradeableProxy resolverProxy) = deployResolver(address(root));
@@ -120,7 +122,7 @@ contract DeployDeterministicScript is Script {
         DomainImplementation ethDomain = DomainImplementation(root.subdomains("eth"));
         if (address(ethDomain) == address(0)) {
             ethDomain = DomainImplementation(root.registerSubdomain("eth", msg.sender));
-            ethDomain.setSubdomainOwnerDelegation(true);
+            ethDomain.setSubdomainOwnerDelegation(true, true);
             ethDomain.addAuthorizedDelegate(address(registry), true);
         }
 

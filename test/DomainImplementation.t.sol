@@ -19,7 +19,7 @@ contract DomainImplementationTest is Test {
         owner = address(this);
 
         root = new DomainRoot(implementation, owner);
-        root.setSubdomainOwnerDelegation(true);
+        root.setSubdomainOwnerDelegation(true, true);
 
         domain = DomainImplementation(root.registerSubdomain("test", owner));
     }
@@ -40,17 +40,31 @@ contract DomainImplementationTest is Test {
 
     function testRegisterSubdomain() public {
         address subdomainOwner = address(0xabc);
-        address subdomain = domain.registerSubdomain("sub", subdomainOwner);
+        DomainImplementation subdomain = DomainImplementation(domain.registerSubdomain("sub", subdomainOwner));
 
-        assertTrue(subdomain != address(0));
-        assertEq(domain.subdomains("sub"), subdomain);
+        assertTrue(address(subdomain) != address(0));
+        assertEq(domain.subdomains("sub"), address(subdomain));
         assertEq(DomainImplementation(subdomain).owner(), subdomainOwner);
+
+        vm.expectRevert(DomainImplementation.SubdomainOwnerDelegationPermanent.selector);
+        domain.setSubdomainOwnerDelegation(false, true);
+
+        assertFalse(subdomain.isAuthorized(subdomainOwner));
+        domain.setSubdomainOwnerDelegation(true, false);
+        assertTrue(subdomain.isAuthorized(subdomainOwner));
+        domain.setSubdomainOwnerDelegation(false, false);
+        assertFalse(subdomain.isAuthorized(subdomainOwner));
+        domain.setSubdomainOwnerDelegation(true, true);
+        assertTrue(subdomain.isAuthorized(subdomainOwner));
+
+        vm.expectRevert(DomainImplementation.SubdomainOwnerDelegationPermanent.selector);
+        domain.setSubdomainOwnerDelegation(false, false);
     }
 
     function testGetNestedAddress() public {
         // Register nested subdomains
         address sub1 = domain.registerSubdomain("sub1", address(this));
-        domain.setSubdomainOwnerDelegation(true);
+        domain.setSubdomainOwnerDelegation(true, true);
         DomainImplementation(sub1).registerSubdomain("sub2", address(this));
 
         bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(4)), "sub1", bytes1(uint8(4)), "sub2", bytes1(uint8(0)));

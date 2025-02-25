@@ -18,11 +18,13 @@ contract SingularResolverTest is Test {
         owner = address(this);
 
         root = new DomainRoot(implementation, owner);
-        root.registerSubdomain("test", owner);
-        root.setSubdomainOwnerDelegation(true);
+        address subdomain = root.registerSubdomain("test", owner);
+        root.setSubdomainOwnerDelegation(true, true);
 
         resolver = new SingularResolver(address(root));
         root.setResolver(address(resolver));
+
+        DomainImplementation(subdomain).registerSubdomain("aaa", address(0x765));
     }
 
     function testSetAddr() public {
@@ -66,7 +68,7 @@ contract SingularResolverTest is Test {
         resolver.setData(dnsEncoded, key, value);
         vm.stopPrank();
 
-        assertEq(resolver.getData(dnsEncoded, key), value);
+        assertEq(resolver.data(dnsEncoded, key), value);
     }
 
     function testUnauthorizedSetAddr() public {
@@ -128,7 +130,20 @@ contract SingularResolverTest is Test {
 
         assertEq(resolver.addr(dnsEncoded), address(0xabc));
         assertEq(resolver.text(dnsEncoded, "key"), "value");
-        assertEq(resolver.getData(dnsEncoded, "datakey"), hex"1234");
+        assertEq(resolver.data(dnsEncoded, "datakey"), hex"1234");
         assertEq(resolver.contenthash(dnsEncoded), hex"1234567890");
+    }
+
+    function testSetTextSubdomain() public {
+        bytes memory dnsEncoded = abi.encodePacked(bytes1(uint8(3)), "aaa", bytes1(uint8(4)), "test", bytes1(uint8(0)));
+        string memory key = "test";
+        string memory value = "value";
+        bytes32 node = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
+
+        vm.prank(owner);
+        resolver.setText(dnsEncoded, key, value);
+        vm.stopPrank();
+
+        assertEq(resolver.text(dnsEncoded, key), value);
     }
 }

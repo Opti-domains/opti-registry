@@ -17,7 +17,7 @@ contract SingularResolver is ISingularResolver, Multicall {
     /// @notice Mapping of domain hash to key to text value
     mapping(bytes32 => mapping(string => string)) private texts;
     /// @notice Mapping of domain hash to key to data value
-    mapping(bytes32 => mapping(string => bytes)) private data;
+    mapping(bytes32 => mapping(string => bytes)) private dataRecords;
     /// @notice Mapping of domain hash to content hash
     mapping(bytes32 => bytes) private contenthashes;
 
@@ -124,7 +124,7 @@ contract SingularResolver is ISingularResolver, Multicall {
         onlyAuthorized(dnsEncoded)
     {
         bytes32 node = DNSEncoder.dnsEncodedNamehash(dnsEncoded);
-        data[node][key] = value;
+        dataRecords[node][key] = value;
         emit DataChanged(node, key, value);
     }
 
@@ -132,8 +132,8 @@ contract SingularResolver is ISingularResolver, Multicall {
     /// @param dnsEncoded The DNS encoded name to get the record for
     /// @param key The key for the data record
     /// @return The data value
-    function getData(bytes calldata dnsEncoded, string calldata key) public view returns (bytes memory) {
-        return data[DNSEncoder.dnsEncodedNamehash(dnsEncoded)][key];
+    function data(bytes calldata dnsEncoded, string calldata key) public view returns (bytes memory) {
+        return dataRecords[DNSEncoder.dnsEncodedNamehash(dnsEncoded)][key];
     }
 
     /// @notice Sets the content hash for a domain

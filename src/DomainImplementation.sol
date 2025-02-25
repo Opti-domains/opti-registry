@@ -28,9 +28,11 @@ contract DomainImplementation is IDomain, Multicall, Clone {
     error SubdomainAlreadyExists();
     error InvalidParent();
     error SubdomainNotFound();
+    error SubdomainOwnerDelegationPermanent();
 
     mapping(address => bool) public authorizedDelegates;
     bool public subdomainOwnerDelegation;
+    bool public subdomainOwnerDelegationPermanent;
 
     /// @notice Check if an address is authorized to manage this domain
     /// @param addr The address to check authorization for
@@ -38,11 +40,20 @@ contract DomainImplementation is IDomain, Multicall, Clone {
     function isAuthorized(address addr) public view virtual returns (bool) {
         bool isParentOwnerDelegated = false;
         address parentAddr = parent();
+
+        if (addr == address(0)) return false;
+
         if (parentAddr != address(0)) {
-            isParentOwnerDelegated = DomainImplementation(parentAddr).subdomainOwnerDelegation() && owner == addr;
+            isParentOwnerDelegated = DomainImplementation(parentAddr).subdomainOwnerDelegation();
+        } else {
+            return authorizedDelegates[addr];
         }
 
-        return addr != address(0) && (addr == parentAddr || authorizedDelegates[addr] || isParentOwnerDelegated);
+        if (isParentOwnerDelegated && owner != address(0)) {
+            return owner == addr || authorizedDelegates[addr];
+        }
+
+        return addr == parentAddr || authorizedDelegates[addr] || DomainImplementation(parentAddr).isAuthorized(addr);
     }
 
     modifier onlyAuthorized() {
@@ -73,8 +84,17 @@ contract DomainImplementation is IDomain, Multicall, Clone {
 
     /// @notice Sets whether owner delegation is enabled for subdomains
     /// @param enabled Whether to enable owner delegation
-    function setSubdomainOwnerDelegation(bool enabled) external virtual onlyAuthorized {
+    function setSubdomainOwnerDelegation(bool enabled, bool permanent) external virtual onlyAuthorized {
+        if (subdomainOwnerDelegationPermanent && !enabled) {
+            revert SubdomainOwnerDelegationPermanent();
+        }
+
+        if (!enabled && permanent) {
+            revert SubdomainOwnerDelegationPermanent();
+        }
+
         subdomainOwnerDelegation = enabled;
+        subdomainOwnerDelegationPermanent = permanent;
     }
 
     /// @notice Registers a new subdomain
@@ -128,7 +148,7 @@ contract DomainImplementation is IDomain, Multicall, Clone {
         return returnData;
     }
 
-    /// @notice Gets the implementation contract address
+    /// @notice Gets the implementation contract address for subdomains
     function implementation() public view virtual returns (address) {
         return _getArgAddress(IMPLEMENTATION_OFFSET);
     }

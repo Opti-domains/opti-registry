@@ -78,7 +78,7 @@ interface IDomain {
 
     /// @notice Sets whether owner delegation is enabled for subdomains
     /// @param enabled Whether to enable owner delegation
-    function setSubdomainOwnerDelegation(bool enabled) external;
+    function setSubdomainOwnerDelegation(bool enabled, bool permanent) external;
 
     /// @notice Gets whether an address is an authorized delegate
     function authorizedDelegates(address delegate) external view returns (bool);
