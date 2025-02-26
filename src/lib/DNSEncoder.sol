@@ -142,8 +142,7 @@ library DNSEncoder {
                 || (ch >= 0x61 && ch <= 0x7A) // a-z
                 || ch == 0x2D // hyphen
                 || ch == 0x5F
-        ) // underscore
-        ;
+        ); // underscore
     }
 
     /// @notice Reverses a DNS encoded name
