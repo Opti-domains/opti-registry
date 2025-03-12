@@ -120,9 +120,19 @@ Unlike other solutions that require you to develop your own gateway on the ETH m
 
 ### 1. Set your ENS mainnet resolver to our Superchain Resolver
 
+Go to https://app.ens.domains and set your ENS mainnet resolver to our Superchain Resolver ([0x7BA8071B8AaD8E91C0eEA70D7cB6816699b1Cc72](https://etherscan.io/address/0x7BA8071B8AaD8E91C0eEA70D7cB6816699b1Cc72)).
 
 ### 2. Point your ENS mainnet resolver to your SingularResolver deployment
 
+Go to https://etherscan.io/address/0x7BA8071B8AaD8E91C0eEA70D7cB6816699b1Cc72#writeProxyContract and call `setVerifierConfig` with the following parameters:
+- node: namehash of your domain. You can use https://swolfeyes.github.io/ethereum-namehash-calculator to get the namehash of your domain.
+- verifier: [0xACe5278f0bB6EeBEe4429C8bb9863066dA60d5Aa](https://etherscan.io/address/0xACe5278f0bB6EeBEe4429C8bb9863066dA60d5Aa) (Address of OPVerifier contract).
+- resolver: Address of your SingularResolver deployment on the Superchain you want to deploy. Default deployment on Optimism is [0x16Af4Cb44e812075e108a95A5A9C7440D15c9B5D](https://optimistic.etherscan.io/address/0x16Af4Cb44e812075e108a95A5A9C7440D15c9B5D).
+- verifierData: `abi.encode(optimismPortalAddress, minAge)`
+  - You can find `optimismPortalAddress` for your chain in the [Superchain Registry](https://github.com/ethereum-optimism/superchain-registry/tree/main/superchain/configs/mainnet)
+  - `minAge` is the finalization period for the records set on the Superchain in seconds. For example, if `minAge` is 3600, you have to wait for 1 hour (3600 seconds) after the record is set on the Superchain before it is available on ENS mainnet. We don't recommend setting `minAge` below 3600. For a high safety use cases, you should set `minAge` to 604800 (7 days).
+
+If the verifier config is not set, it will default to Optimism mainnet with 3600 seconds `minAge`.
 
 ## Frontend and Backend services deployment
 
